@@ -1,145 +1,322 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProQuote AI | 專業接案報價架構師</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProQuote AI | 專業報價工作站</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=JetBrains+Mono&display=swap');
-        :root { --bg: #050508; --accent-cyan: #22d3ee; --accent-purple: #a78bfa; --text-main: #f8f8ff; --border: rgba(255, 255, 255, 0.1); }
-        body { font-family: 'Outfit', 'Noto Sans TC', sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
-        .glass { background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(24px); border: 1px solid var(--border); border-radius: 1.5rem; padding: 2rem; }
-        .glass-input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 0.75rem; color: #f1f5f9; width: 100%; padding: 0.75rem 1rem; outline: none; }
-        .btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
-        .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); padding: 0.75rem 1.5rem; border-radius: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
-        .result-section { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; }
-        .result-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; }
-        .result-value { font-size: 1rem; white-space: pre-wrap; }
-        .hidden { display: none; }
-        #version-tag { position: fixed; top: 10px; right: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent-cyan); background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--accent-cyan); }
-        @media print { body { background: white !important; color: black !important; } body * { visibility: hidden; } #printable-area, #printable-area * { visibility: visible; } #printable-area { position: absolute; left: 0; top: 0; width: 100%; } .result-section { border: 1px solid #ddd !important; color: black !important; } }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --bg: #0a0a0a;
+            --card-bg: #141418;
+            --accent: #22d3ee;
+            --accent-gradient: linear-gradient(135deg, #22d3ee 0%, #a78bfa 100%);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(20, 20, 24, 0.7);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 延續 Landing Page 的光暈張力 */
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.12) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            color: white;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #000;
+            font-weight: 700;
+            transition: all 0.3s;
+            border-radius: 0.75rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: white;
+            transition: all 0.2s;
+            border-radius: 0.75rem;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 報價單紙張質感 */
+        .paper {
+            background: white;
+            color: #000;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border-radius: 0.5rem;
+            min-height: 842px; /* A4 ratio */
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem;
+            transition: all 0.3s ease;
+        }
+
+        .item-row input {
+            border: none;
+            border-bottom: 1px solid #eee;
+            padding: 4px 0;
+            width: 100%;
+            font-family: inherit;
+        }
+        .item-row input:focus { outline: none; border-bottom-color: #000; }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .paper { box-shadow: none; padding: 0; width: 100%; max-width: none; }
+            .bg-glow { display: none; }
+        }
     </style>
 </head>
 <body>
-    <div id="version-tag">VERSION: v20260430_CN_01 | LANG: ZH-TW</div>
+    <div class="bg-glow"></div>
 
-    <div class="max-w-3xl w-full">
-        <div class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">ProQuote AI</h1>
-            <p class="text-slate-400">專業接案報價架構師 | Professional Quotation Architect</p>
+    <!-- Navigation -->
+    <nav class="p-6 flex justify-between items-center no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-black font-bold text-xl">P</div>
+            <h1 class="text-xl font-bold tracking-tight">ProQuote <span class="text-cyan-400">AI</span></h1>
         </div>
+        <a href="landing.html" class="text-sm text-slate-400 hover:text-white transition-colors">← 返回主頁</a>
+    </nav>
 
-        <div class="glass">
-            <div id="step-1" class="space-y-6">
-                <h2 class="text-xl font-bold">1. 專案詳情 (Project Details)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <main class="flex-1 container mx-auto px-6 pb-12 grid grid-cols-1 lg:grid-cols-12 gap-8 no-print">
+        
+        <!-- Left: Configuration Panel -->
+        <section class="lg:col-span-5 space-y-6">
+            <div class="glass-panel p-6 space-y-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mono">Project Configuration</h2>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="text-xs text-slate-400 ml-1">專案名稱</label>
-                        <input type="text" id="proj-name" class="glass-input" placeholder="例如：AI 自動化系統建構">
+                        <input type="text" id="proj-name" class="input-field w-full" placeholder="AI 系統建構" oninput="updatePreview()">
                     </div>
                     <div class="space-y-2">
                         <label class="text-xs text-slate-400 ml-1">客戶名稱</label>
-                        <input type="text" id="client-name" class="glass-input" placeholder="例如：某某科技有限公司">
+                        <input type="text" id="client-name" class="input-field w-full" placeholder="某某科技公司" oninput="updatePreview()">
                     </div>
                 </div>
+
                 <div class="space-y-2">
-                    <label class="text-xs text-slate-400 ml-1">專案描述與交付物 (Scope & Deliverables)</label>
-                    <textarea id="proj-desc" class="glass-input h-32" placeholder="請詳細描述工作範圍、交付項目及預期目標..."></textarea>
+                    <label class="text-xs text-slate-400 ml-1">專案描述 (Scope of Work)</label>
+                    <textarea id="proj-desc" class="input-field w-full h-32" placeholder="描述工作範圍與交付物..." oninput="updatePreview()"></textarea>
                 </div>
-                <button onclick="nextStep(2)" class="btn-primary w-full">下一步：設定定價 →</button>
-            </div>
 
-            <div id="step-2" class="hidden space-y-6">
-                <h2 class="text-xl font-bold">2. 定價策略 (Pricing Strategy)</h2>
-                <select id="pricing-type" class="glass-input mb-4">
-                    <option value="fixed">固定價格 (Fixed Price)</option>
-                    <option value="hourly">時薪計費 (Hourly Rate)</option>
-                    <option value="package">價值方案 (Value Package)</option>
-                </select>
-                <div class="flex gap-4">
-                    <button onclick="nextStep(1)" class="btn-secondary">返回</button>
-                    <button onclick="generateQuotation()" id="gen-btn" class="btn-primary flex-1">生成專業報價單</button>
-                </div>
-            </div>
-
-            <div id="step-3" class="hidden space-y-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">3. 最終報價單 (Final Quote)</h2>
-                    <div class="flex gap-2">
-                        <button onclick="window.print()" class="btn-secondary text-xs">導出 PDF</button>
-                        <button onclick="exportToExcel()" class="btn-secondary text-xs">導出 Excel</button>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs text-slate-400 ml-1">報價項目 (Line Items)</label>
+                        <button onclick="addItem()" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold">+ 新增項目</button>
+                    </div>
+                    <div id="items-list" class="space-y-3">
+                        <!-- Items injected here -->
                     </div>
                 </div>
-                <div id="printable-area">
-                    <div id="quotation-result" class="space-y-4"></div>
-                </div>
-                <button onclick="nextStep(1)" class="btn-secondary w-full mt-6">重新創建</button>
             </div>
-        </div>
-    </div>
+
+            <div class="glass-panel p-6 flex gap-4">
+                <button onclick="window.print()" class="btn-primary flex-1 py-3 text-sm">導出 PDF (Print)</button>
+                <button onclick="exportToExcel()" class="btn-secondary px-6 py-3 text-sm">Excel</button>
+            </div>
+        </section>
+
+        <!-- Right: Live Preview -->
+        <section class="lg:col-span-7 overflow-y-auto max-h-[calc(100vh-150px)] p-4 bg-black/20 rounded-3xl border border-white/5">
+            <div class="flex justify-center">
+                <div id="printable-area" class="paper">
+                    <div class="flex justify-between items-start mb-12">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">服務報價單</h1>
+                            <p class="text-slate-500 text-sm">Quotation for Services</p>
+                        </div>
+                        <div class="text-right text-sm">
+                            <p><strong>日期：</strong> <span id="view-date">2026/05/01</span></p>
+                            <p><strong>編號：</strong> QT-2026-001</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-12 grid grid-cols-2 gap-8">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-bold mb-1">客戶名稱</p>
+                            <p id="view-client" class="text-lg font-bold">---</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-bold mb-1">專案名稱</p>
+                            <p id="view-proj" class="text-lg font-bold">---</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-12">
+                        <p class="text-xs text-slate-400 uppercase font-bold mb-2">工作範圍 (Scope of Work)</p>
+                        <p id="view-desc" class="text-sm text-slate-700 whitespace-pre-wrap">請輸入專案描述...</p>
+                    </div>
+
+                    <table class="w-full mb-12">
+                        <thead>
+                            <tr class="border-b-2 border-black text-left text-sm">
+                                <th class="py-2">項目描述</th>
+                                <th class="py-2 text-center">數量</th>
+                                <th class="py-2 text-right">單價</th>
+                                <th class="py-2 text-right">小計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="view-items">
+                            <!-- Rows injected here -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t-2 border-black">
+                                <td colspan="3" class="py-4 text-right font-bold text-lg">總投資金額 (Total)</td>
+                                <td id="view-total" class="py-4 text-right font-bold text-xl">NT$ 0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="mt-20 p-4 border border-slate-200 rounded-lg text-xs text-slate-500">
+                        <p class="font-bold mb-2">條款與備註：</p>
+                        <p>1. 本報價有效期為 14 天。</p>
+                        <p>2. 付款方式：50% 訂金，50% 驗收後支付。</p>
+                        <p>3. 實際交付內容以最終簽署之合約為準。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script>
-        let currentStep = 1;
-        let currentQuoteData = [];
+        let items = [
+            { desc: '系統架構設計', qty: 1, price: 15000 },
+            { desc: '自動化工作流開發', qty: 3, price: 10000 },
+            { desc: '前端管理介面實作', qty: 1, price: 10000 }
+        ];
 
-        function nextStep(step) {
-            document.getElementById('step-' + currentStep).classList.add('hidden');
-            document.getElementById('step-' + step).classList.remove('hidden');
-            currentStep = step;
+        function renderItemsList() {
+            const list = document.getElementById('items-list');
+            list.innerHTML = '';
+            items.forEach((item, index) => {
+                list.innerHTML += `
+                    <div class="flex gap-2 items-end bg-white/5 p-3 rounded-xl border border-white/10">
+                        <div class="flex-1 space-y-1">
+                            <label class="text-[10px] text-slate-500 uppercase mono">Item Description</label>
+                            <input type="text" value="${item.desc}" oninput="updateItem(${index}, 'desc', this.value)" class="input-field w-full text-sm">
+                        </div>
+                        <div class="w-16 space-y-1">
+                            <label class="text-[10px] text-slate-500 uppercase mono">Qty</label>
+                            <input type="number" value="${item.qty}" oninput="updateItem(${index}, 'qty', this.value)" class="input-field w-full text-sm text-center">
+                        </div>
+                        <div class="w-24 space-y-1">
+                            <label class="text-[10px] text-slate-500 uppercase mono">Price</label>
+                            <input type="number" value="${item.price}" oninput="updateItem(${index}, 'price', this.value)" class="input-field w-full text-sm text-right">
+                        </div>
+                        <button onclick="removeItem(${index})" class="p-2 text-slate-500 hover:text-red-400 transition-colors">✕</button>
+                    </div>
+                `;
+            });
+            updatePreview();
         }
 
-        async function generateQuotation() {
-            const btn = document.getElementById('gen-btn');
-            const name = document.getElementById('proj-name').value.trim() || '未命名專案';
-            const client = document.getElementById('client-name').value.trim() || '尊敬的客戶';
-            const desc = document.getElementById('proj-desc').value.trim() || '尚未提供詳細描述。';
-            const pricing = document.getElementById('pricing-type').value;
+        function updateItem(index, field, value) {
+            if (field === 'qty' || field === 'price') {
+                items[index][field] = parseFloat(value) || 0;
+            } else {
+                items[index][field] = value;
+            }
+            updatePreview();
+        }
 
-            btn.disabled = true;
-            btn.innerText = '構建中...';
+        function addItem() {
+            items.push({ desc: '新項目', qty: 1, price: 0 });
+            renderItemsList();
+        }
 
-            await new Promise(r => setTimeout(r, 600));
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItemsList();
+        }
 
-            const pricingMap = {
-                'fixed': '固定價格 (Fixed Price)',
-                'hourly': '時薪計費 (Hourly Rate)',
-                'package': '價值方案 (Value Package)'
-            };
+        function updatePreview() {
+            document.getElementById('view-client').innerText = document.getElementById('client-name').value || '---';
+            document.getElementById('view-proj').innerText = document.getElementById('proj-name').value || '---';
+            document.getElementById('view-desc').innerText = document.getElementById('proj-desc').value || '請輸入專案描述...';
 
-            currentQuoteData = [
-                { label: '客戶與專案 (Client & Project)', value: '客戶名稱：' + client + '\\n專案名稱：' + name },
-                { label: '工作範圍 (Scope of Work)', value: desc },
-                { label: '預計時間線 (Timeline)', value: '針對 ' + name + ' 的預計交付週期為 4 週，包含需求分析、設計迭代與最終交付。' },
-                { label: '定價模型 (Pricing Model)', value: '採用的計費策略：' + pricingMap[pricing] + '\\n本報價基於為 ' + client + ' 提供的專屬服務範圍。' },
-                { label: '總投資金額 (Total Investment)', value: pricing === 'fixed' ? '$6,500 USD' : pricing === 'hourly' ? '$4,000 - $8,000 USD' : '$7,200 USD' }
-            ];
+            const viewItems = document.getElementById('view-items');
+            viewItems.innerHTML = '';
+            let total = 0;
 
-            const container = document.getElementById('quotation-result');
-            container.innerHTML = '';
-            currentQuoteData.forEach(item => {
-                container.innerHTML += `
-                    <div class="result-section">
-                        <div class="result-label">${item.label}</div>
-                        <div class="result-value">${item.value}</div>
-                    </div>`;
+            items.forEach(item => {
+                const subtotal = item.qty * item.price;
+                total += subtotal;
+                viewItems.innerHTML += `
+                    <tr class="border-b border-slate-100 text-sm">
+                        <td class="py-3">${item.desc}</td>
+                        <td class="py-3 text-center">${item.qty}</td>
+                        <td class="py-3 text-right">NT$ ${item.price.toLocaleString()}</td>
+                        <td class="py-3 text-right font-semibold">NT$ ${subtotal.toLocaleString()}</td>
+                    </tr>
+                `;
             });
 
-            btn.disabled = false;
-            btn.innerText = '生成專業報價單';
-            nextStep(3);
+            document.getElementById('view-total').innerText = 'NT$ ' + total.toLocaleString();
         }
 
-        function exportToExcel() {
-            if (!currentQuoteData.length) return;
-            const data = currentQuoteData.map(item => [item.label, item.value]);
-            const ws = XLSX.utils.aoa_to_sheet([["項目", "詳細內容"], ...data]);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "報價單");
-            const projName = document.getElementById('proj-name').value || 'Quotation';
-            XLSX.writeFile(wb, 'ProQuote_' + projName.replace(/\\s+/g, '_') + '.xlsx');
-        }
+        // Init
+        document.getElementById('view-date').innerText = new Date().toLocaleDateString('zh-TW');
+        renderItemsList();
     </script>
 </body>
 </html>
