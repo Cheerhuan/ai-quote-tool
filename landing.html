@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Quote Tool | 30秒產出專業報價單</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card-bg: #141418;
+            --accent: #22d3ee;
+            --accent-gradient: linear-gradient(135deg, #22d3ee 0%, #a78bfa 100%);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .section-padding {
+            padding: 6rem 0;
+        }
+
+        .text-center { text-align: center; }
+
+        h1, h2, h3 {
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .gradient-text {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            border: none;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(34, 211, 238, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .hero {
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%);
+            z-index: -1;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero p {
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 4rem;
+            align-items: stretch;
+        }
+
+        .demo-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: block;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        .messy-input {
+            color: #ef4444;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .clean-output {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .quote-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .quote-row:last-child { border: none; }
+
+        .pain-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .pain-card {
+            padding: 2rem;
+            border-left: 3px solid #ef4444;
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent);
+        }
+
+        .pain-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #fca5a5;
+        }
+
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .benefit-card {
+            padding: 2rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .benefit-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+
+        .benefit-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #000;
+        }
+
+        .sample-container {
+            background: white;
+            color: #000;
+            border-radius: 1rem;
+            padding: 3rem;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .sample-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #000;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-card {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+            background: var(--card-bg);
+            border: 2px solid var(--accent);
+            border-radius: 2rem;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .price-tag {
+            font-size: 4rem;
+            font-weight: 800;
+            margin: 1rem 0;
+        }
+
+        .price-sub {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features {
+            text-align: left;
+            max-width: 300px;
+            margin: 0 auto 2rem;
+            list-style: none;
+        }
+
+        .pricing-features li {
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .testimonial {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 2rem;
+            border-radius: 1rem;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            margin-top: 1rem;
+            font-style: normal;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--accent);
+        }
+
+        .final-cta {
+            background: var(--accent-gradient);
+            color: #000;
+            padding: 5rem 2rem;
+            border-radius: 2rem;
+            text-align: center;
+        }
+
+        .final-cta h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .demo-grid, .pain-grid, .benefit-grid, .trust-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero container">
+        <h1>30秒產出專業報價單<br><span class="gradient-text">不再浪費 2 小時</span></h1>
+        <p>將雜亂的客戶需求，一鍵轉化為高成交率的專業提案。專為接案者、代理商與工程師打造。</p>
+        <div class="hero-btns">
+            <a href="app.html" class="btn btn-primary">立即免費產生報價</a>
+            <a href="#demo" class="btn btn-secondary">查看範例</a>
+        </div>
+    </section>
+
+    <section id="demo" class="section-padding container">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl mb-4">從混亂到專業，只需一鍵</h2>
+            <p class="text-muted">不需要思考格式，不需要反覆修改</p>
+        </div>
+        <div class="demo-grid">
+            <div class="demo-card">
+                <span class="demo-label">客戶原始需求 (Messy Input)</span>
+                <div class="messy-input">
+                    "我想做一個電商網站，要有購物車、金流，大概要 5 頁，希望風格像 Apple 那樣，預算大概 5 萬，希望能下個月完工..."
+                </div>
+            </div>
+            <div class="demo-card" style="border-color: var(--accent);">
+                <span class="demo-label" style="color: var(--accent);">AI 產出報價 (Professional Quote)</span>
+                <div class="clean-output">
+                    <div class="quote-row"><strong>專案名稱</strong> <span>高端電商品牌網站建構</span></div>
+                    <div class="quote-row"><strong>核心交付物</strong> <span>5頁響應式設計 / 金流整合 / 購物系統</span></div>
+                    <div class="quote-row"><strong>預計工期</strong> <span>4 週 (含測試)</span></div>
+                    <div class="quote-row" style="border:none; font-size: 1.2rem; font-weight: 800;">
+                        <span>總投資金額</strong> <span>NT$ 50,000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding container">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl mb-4">你是否也面臨這些挫折？</h2>
+        </div>
+        <div class="pain-grid">
+            <div class="pain-card">
+                <h3>還在手動打報價？</h3>
+                <p class="text-muted">面對空白文件發呆，不知道如何條列工作項目。</p>
+            </div>
+            <div class="pain-card">
+                <h3>一份報價花 1–2 小時？</h3>
+                <p class="text-muted">光是調整格式和措辭就花掉半個下午，影響開發進度。</p>
+            </div>
+            <div class="pain-card">
+                <h3>專業感不足導致丟單？</h3>
+                <p class="text-muted">客戶覺得你的報價單太隨意，對你的專業度產生懷疑。</p>
+            </div>
+        </div>
+        <div class="text-center mt-12">
+            <h3 class="text-2xl font-bold">現在有更快的方法</h3>
+        </div>
+    </section>
+
+    <section class="section-padding container">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl mb-4">讓你的成交率翻倍</h2>
+        </div>
+        <div class="benefit-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">90%</div>
+                <h3>節省 90% 的時間</h3>
+                <p class="text-muted">將原本 2 小時的文書工作壓縮至 30 秒，把時間還給創作。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">↑</div>
+                <h3>提升成交率</h3>
+                <p class="text-muted">結構清晰的報價單讓客戶一眼看出價值，大幅降低猶豫時間。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">★</div>
+                <h3>建立專業形象</h3>
+                <p class="text-muted">即使是單兵作戰，也能展現出頂尖代理商等級的提案水準。</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-padding container">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl mb-4">實際產出範例</h2>
+        </div>
+        <div class="sample-container">
+            <div class="sample-header">
+                <div>
+                    <strong style="font-size: 1.5rem;">服務報價單</strong><br>
+                    <span style="color: #666; font-size: 0.9rem;">Quotation for Services</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong>日期：</strong> 2026/04/30<br>
+                    <strong>編號：</strong> Q-2026-001
+                </div>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <strong>客戶名稱：</strong> Stellar Tech Inc.<br>
+                <strong>專案名稱：</strong> AI 自動化工作流開發
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #000; text-align: left;">
+                        <th style="padding: 10px 0;">項目</th>
+                        <th style="padding: 10px 0; text-align: right;">金額</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px 0;">系統架構設計與需求分析</td>
+                        <td style="padding: 15px 0; text-align: right;">NT$ 15,000</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px 0;">自動化工作流開發 (3 個模組)</td>
+                        <td style="padding: 15px 0; text-align: right;">NT$ 30,000</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px 0;">前端管理後台實作</td>
+                        <td style="padding: 15px 0; text-align: right;">NT$ 10,000</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td style="padding: 20px 0; font-weight: 800; font-size: 1.2rem;">總計投資金額</td>
+                        <td style="padding: 20px 0; text-align: right; font-weight: 800; font-size: 1.2rem;">NT$ 55,000</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div style="font-size: 0.8rem; color: #666; line-height: 1.4;">
+                * 本報價有效期為 14 天。付款方式：50% 訂金，50% 驗收後支付。
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="section-padding container">
+        <div class="pricing-card">
+            <span class="demo-label" style="color: var(--accent);">簡單透明的定價</span>
+            <div class="price-tag">NT$ 50 <span style="font-size: 1.5rem; color: var(--text-muted);">/ 月</span></div>
+            <p class="price-sub">「一杯咖啡的價格，幫你省下每週數小時的挫折感」</p>
+            <ul class="pricing-features">
+                <li>✅ 無限次產生專業報價單</li>
+                <li>✅ 一鍵導出 PDF / Excel</li>
+                <li>✅ 隨時取消，無綁約</li>
+                <li>✅ 零學習成本，立即上手</li>
+            </ul>
+            <a href="app.html" class="btn btn-primary w-full" style="display: block; text-align: center;">開始免費試用</a>
+        </div>
+    </section>
+
+    <section class="section-padding container">
+        <div class="trust-grid">
+            <div class="testimonial">
+                "以前每接一個案子都要花一整個晚上在寫報價單，現在 30 秒搞定，客戶還誇我專業。"
+                <div class="testimonial-author">— Jason, 獨立開發者</div>
+            </div>
+            <div class="testimonial">
+                "對代理商來說，產出速度就是競爭力。這個工具讓我們在客戶需求提出的當下就能給出報價。"
+                <div class="testimonial-author">— Sarah, Creative Agency Owner</div>
+            </div>
+            <div class="testimonial">
+                "最棒的是它能把我的碎碎念變成正式的文件，再也不用擔心漏寫項目導致虧本。"
+                <div class="testimonial-author">— Kevin, 自由接案工程師</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mb-20">
+        <div class="final-cta">
+            <h2>30秒開始，<br>今天就少浪費 1 小時</h2>
+            <p style="margin-bottom: 2rem; color: rgba(0,0,0,0.7);">加入數百位高效接案者，讓報價不再是負擔。</p>
+            <a href="app.html" class="btn btn-secondary" style="color: #000; border-color: #000; background: white;">立即試用</a>
+        </div>
+    </section>
+
+</body>
+</html>
