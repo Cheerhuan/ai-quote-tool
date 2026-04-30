@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProQuote AI | DEBUG VERSION</title>
+    <title>ProQuote AI | 專業接案報價架構師</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=JetBrains+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=JetBrains+Mono&display=swap');
         :root { --bg: #050508; --accent-cyan: #22d3ee; --accent-purple: #a78bfa; --text-main: #f8f8ff; --border: rgba(255, 255, 255, 0.1); }
-        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+        body { font-family: 'Outfit', 'Noto Sans TC', sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
         .glass { background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(24px); border: 1px solid var(--border); border-radius: 1.5rem; padding: 2rem; }
         .glass-input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 0.75rem; color: #f1f5f9; width: 100%; padding: 0.75rem 1rem; outline: none; }
-        .btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem; cursor: pointer; }
-        .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); padding: 0.75rem 1.5rem; border-radius: 0.75rem; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: rgba(255, 255, 255, 0.7); padding: 0.75rem 1.5rem; border-radius: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
         .result-section { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; }
         .result-label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; }
         .result-value { font-size: 1rem; white-space: pre-wrap; }
@@ -23,50 +23,59 @@
     </style>
 </head>
 <body>
-    <div id="version-tag">VERSION: v20260430_FINAL_01 | STATUS: DEBUG_MODE</div>
+    <div id="version-tag">VERSION: v20260430_CN_01 | LANG: ZH-TW</div>
 
     <div class="max-w-3xl w-full">
         <div class="text-center mb-10">
             <h1 class="text-4xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">ProQuote AI</h1>
-            <p class="text-slate-400">Verification Build: Testing Data Binding</p>
+            <p class="text-slate-400">專業接案報價架構師 | Professional Quotation Architect</p>
         </div>
 
         <div class="glass">
             <div id="step-1" class="space-y-6">
-                <h2 class="text-xl font-bold">1. Input Details</h2>
+                <h2 class="text-xl font-bold">1. 專案詳情 (Project Details)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" id="proj-name" class="glass-input" placeholder="Project Name">
-                    <input type="text" id="client-name" class="glass-input" placeholder="Client Name">
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400 ml-1">專案名稱</label>
+                        <input type="text" id="proj-name" class="glass-input" placeholder="例如：AI 自動化系統建構">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400 ml-1">客戶名稱</label>
+                        <input type="text" id="client-name" class="glass-input" placeholder="例如：某某科技有限公司">
+                    </div>
                 </div>
-                <textarea id="proj-desc" class="glass-input h-32" placeholder="Full Project Description..."></textarea>
-                <button onclick="nextStep(2)" class="btn-primary w-full">Next: Pricing →</button>
+                <div class="space-y-2">
+                    <label class="text-xs text-slate-400 ml-1">專案描述與交付物 (Scope & Deliverables)</label>
+                    <textarea id="proj-desc" class="glass-input h-32" placeholder="請詳細描述工作範圍、交付項目及預期目標..."></textarea>
+                </div>
+                <button onclick="nextStep(2)" class="btn-primary w-full">下一步：設定定價 →</button>
             </div>
 
             <div id="step-2" class="hidden space-y-6">
-                <h2 class="text-xl font-bold">2. Pricing</h2>
+                <h2 class="text-xl font-bold">2. 定價策略 (Pricing Strategy)</h2>
                 <select id="pricing-type" class="glass-input mb-4">
-                    <option value="fixed">Fixed Price</option>
-                    <option value="hourly">Hourly Rate</option>
-                    <option value="package">Value Package</option>
+                    <option value="fixed">固定價格 (Fixed Price)</option>
+                    <option value="hourly">時薪計費 (Hourly Rate)</option>
+                    <option value="package">價值方案 (Value Package)</option>
                 </select>
                 <div class="flex gap-4">
-                    <button onclick="nextStep(1)" class="btn-secondary">Back</button>
-                    <button onclick="generateQuotation()" id="gen-btn" class="btn-primary flex-1">Generate Quote</button>
+                    <button onclick="nextStep(1)" class="btn-secondary">返回</button>
+                    <button onclick="generateQuotation()" id="gen-btn" class="btn-primary flex-1">生成專業報價單</button>
                 </div>
             </div>
 
             <div id="step-3" class="hidden space-y-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">3. Final Result</h2>
+                    <h2 class="text-xl font-bold">3. 最終報價單 (Final Quote)</h2>
                     <div class="flex gap-2">
-                        <button onclick="window.print()" class="btn-secondary text-xs">PDF</button>
-                        <button onclick="exportToExcel()" class="btn-secondary text-xs">Excel</button>
+                        <button onclick="window.print()" class="btn-secondary text-xs">導出 PDF</button>
+                        <button onclick="exportToExcel()" class="btn-secondary text-xs">導出 Excel</button>
                     </div>
                 </div>
                 <div id="printable-area">
                     <div id="quotation-result" class="space-y-4"></div>
                 </div>
-                <button onclick="nextStep(1)" class="btn-secondary w-full mt-6">Start Over</button>
+                <button onclick="nextStep(1)" class="btn-secondary w-full mt-6">重新創建</button>
             </div>
         </div>
     </div>
@@ -83,24 +92,28 @@
 
         async function generateQuotation() {
             const btn = document.getElementById('gen-btn');
-            const name = document.getElementById('proj-name').value.trim() || 'Unnamed Project';
-            const client = document.getElementById('client-name').value.trim() || 'Valued Client';
-            const desc = document.getElementById('proj-desc').value.trim() || 'No description provided.';
+            const name = document.getElementById('proj-name').value.trim() || '未命名專案';
+            const client = document.getElementById('client-name').value.trim() || '尊敬的客戶';
+            const desc = document.getElementById('proj-desc').value.trim() || '尚未提供詳細描述。';
             const pricing = document.getElementById('pricing-type').value;
 
-            console.log('DEBUG: Triggering Generation');
-            console.log('DEBUG: Inputs ->', { name, client, desc, pricing });
-
             btn.disabled = true;
-            btn.innerText = 'Processing...';
+            btn.innerText = '構建中...';
 
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 600));
+
+            const pricingMap = {
+                'fixed': '固定價格 (Fixed Price)',
+                'hourly': '時薪計費 (Hourly Rate)',
+                'package': '價值方案 (Value Package)'
+            };
 
             currentQuoteData = [
-                { label: 'Client & Project', value: 'Client: ' + client + '\\nProject: ' + name },
-                { label: 'Scope of Work', value: desc },
-                { label: 'Pricing Model', value: 'Selected Model: ' + pricing + ' for ' + client },
-                { label: 'Total Investment', value: pricing === 'fixed' ? '$6,500 USD' : pricing === 'hourly' ? '$4,000 - $8,000 USD' : '$7,200 USD' }
+                { label: '客戶與專案 (Client & Project)', value: '客戶名稱：' + client + '\\n專案名稱：' + name },
+                { label: '工作範圍 (Scope of Work)', value: desc },
+                { label: '預計時間線 (Timeline)', value: '針對 ' + name + ' 的預計交付週期為 4 週，包含需求分析、設計迭代與最終交付。' },
+                { label: '定價模型 (Pricing Model)', value: '採用的計費策略：' + pricingMap[pricing] + '\\n本報價基於為 ' + client + ' 提供的專屬服務範圍。' },
+                { label: '總投資金額 (Total Investment)', value: pricing === 'fixed' ? '$6,500 USD' : pricing === 'hourly' ? '$4,000 - $8,000 USD' : '$7,200 USD' }
             ];
 
             const container = document.getElementById('quotation-result');
@@ -113,19 +126,19 @@
                     </div>`;
             });
 
-            console.log('DEBUG: Render Complete. Data:', currentQuoteData);
             btn.disabled = false;
-            btn.innerText = 'Generate Quote';
+            btn.innerText = '生成專業報價單';
             nextStep(3);
         }
 
         function exportToExcel() {
             if (!currentQuoteData.length) return;
             const data = currentQuoteData.map(item => [item.label, item.value]);
-            const ws = XLSX.utils.aoa_to_sheet([["Field", "Details"], ...data]);
+            const ws = XLSX.utils.aoa_to_sheet([["項目", "詳細內容"], ...data]);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Quote");
-            XLSX.writeFile(wb, 'Quote_Export.xlsx');
+            XLSX.utils.book_append_sheet(wb, ws, "報價單");
+            const projName = document.getElementById('proj-name').value || 'Quotation';
+            XLSX.writeFile(wb, 'ProQuote_' + projName.replace(/\\s+/g, '_') + '.xlsx');
         }
     </script>
 </body>
