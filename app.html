@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProQuote AI | 專業報價工作站</title>
+    <title>ProQuote SaaS | 讓報價變成成交的藝術</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
         
@@ -26,19 +28,16 @@
             font-family: 'Outfit', 'Noto Sans TC', sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* 延續 Landing Page 的光暈張力 */
         .bg-glow {
             position: fixed;
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 800px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(34, 211, 238, 0.12) 0%, transparent 70%);
+            width: 100vw;
+            height: 600px;
+            background: radial-gradient(circle at center, rgba(34, 211, 238, 0.15) 0%, transparent 70%);
             z-index: -1;
             pointer-events: none;
         }
@@ -53,17 +52,19 @@
         .mono { font-family: 'JetBrains Mono', monospace; }
 
         .input-field {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border);
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             color: white;
-            padding: 0.75rem 1rem;
+            padding: 1.25rem;
             outline: none;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+            line-height: 1.6;
         }
         .input-field:focus {
             border-color: var(--accent);
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.07);
             box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
         }
 
@@ -73,250 +74,484 @@
             font-weight: 700;
             transition: all 0.3s;
             border-radius: 0.75rem;
+            cursor: pointer;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(34, 211, 238, 0.3);
         }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
-            color: white;
+        /* Example Preview Card */
+        .preview-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--border);
+            border-radius: 1rem;
+            padding: 1rem;
+            font-size: 0.875rem;
+        }
+        .preview-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+        .preview-line b { color: var(--text-main); }
+
+        .hidden-section { display: none; }
+
+        /* Tab Styles */
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
             transition: all 0.2s;
-            border-radius: 0.75rem;
+            cursor: pointer;
         }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
         }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        /* 報價單紙張質感 */
-        .paper {
-            background: white;
-            color: #000;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border-radius: 0.5rem;
-            min-height: 842px; /* A4 ratio */
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 3rem;
-            transition: all 0.3s ease;
+        /* Evaluation Badges */
+        .badge-market {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
         }
-
-        .item-row input {
-            border: none;
-            border-bottom: 1px solid #eee;
-            padding: 4px 0;
-            width: 100%;
-            font-family: inherit;
-        }
-        .item-row input:focus { outline: none; border-bottom-color: #000; }
-
-        @media print {
-            body { background: white !important; color: black !important; }
-            .no-print { display: none !important; }
-            .paper { box-shadow: none; padding: 0; width: 100%; max-width: none; }
-            .bg-glow { display: none; }
-        }
+        .badge-below { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+        .badge-reasonable { background: #22c55e20; color: #22c55e; border: 1px solid #22c55e40; }
+        .badge-premium { background: #a78bfa20; color: #a78bfa; border: 1px solid #a78bfa40; }
     </style>
 </head>
 <body>
     <div class="bg-glow"></div>
 
     <!-- Navigation -->
-    <nav class="p-6 flex justify-between items-center no-print">
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-black font-bold text-xl">P</div>
-            <h1 class="text-xl font-bold tracking-tight">ProQuote <span class="text-cyan-400">AI</span></h1>
+            <h1 class="text-xl font-bold tracking-tight">ProQuote <span class="text-cyan-400">SaaS</span></h1>
         </div>
-        <a href="landing.html" class="text-sm text-slate-400 hover:text-white transition-colors">← 返回主頁</a>
+        <div class="flex items-center gap-6 text-sm font-medium">
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">Features</a>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">Pricing</a>
+            <button class="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10">Login</button>
+        </div>
     </nav>
 
-    <main class="flex-1 container mx-auto px-6 pb-12 grid grid-cols-1 lg:grid-cols-12 gap-8 no-print">
+    <main class="max-w-4xl mx-auto px-6 pb-24">
         
-        <!-- Left: Configuration Panel -->
-        <section class="lg:col-span-5 space-y-6">
-            <div class="glass-panel p-6 space-y-6">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mono">Project Configuration</h2>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="text-xs text-slate-400 ml-1">專案名稱</label>
-                        <input type="text" id="proj-name" class="input-field w-full" placeholder="AI 系統建構" oninput="updatePreview()">
+        <!-- Section 1: Hero -->
+        <section class="text-center pt-20 pb-16 space-y-6">
+            <h2 class="text-5xl md:text-7xl font-extrabold tracking-tighter leading-tight">
+                Stop Guessing Your Price. <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Generate Client-Ready Quotes in Seconds.</span>
+            </h2>
+            <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+                Know what to charge, structure your quote, and avoid underpricing.
+            </p>
+            
+            <!-- Example Output Preview -->
+            <div class="flex justify-center pt-8">
+                <div class="preview-card w-full max-w-xs text-left">
+                    <div class="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-widest text-cyan-400 mono">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                        Instant Result
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-xs text-slate-400 ml-1">客戶名稱</label>
-                        <input type="text" id="client-name" class="input-field w-full" placeholder="某某科技公司" oninput="updatePreview()">
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-xs text-slate-400 ml-1">專案描述 (Scope of Work)</label>
-                    <textarea id="proj-desc" class="input-field w-full h-32" placeholder="描述工作範圍與交付物..." oninput="updatePreview()"></textarea>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <label class="text-xs text-slate-400 ml-1">報價項目 (Line Items)</label>
-                        <button onclick="addItem()" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold">+ 新增項目</button>
-                    </div>
-                    <div id="items-list" class="space-y-3">
-                        <!-- Items injected here -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-panel p-6 flex gap-4">
-                <button onclick="window.print()" class="btn-primary flex-1 py-3 text-sm">導出 PDF (Print)</button>
-                <button onclick="exportToExcel()" class="btn-secondary px-6 py-3 text-sm">Excel</button>
-            </div>
-        </section>
-
-        <!-- Right: Live Preview -->
-        <section class="lg:col-span-7 overflow-y-auto max-h-[calc(100vh-150px)] p-4 bg-black/20 rounded-3xl border border-white/5">
-            <div class="flex justify-center">
-                <div id="printable-area" class="paper">
-                    <div class="flex justify-between items-start mb-12">
-                        <div>
-                            <h1 class="text-3xl font-bold mb-2">服務報價單</h1>
-                            <p class="text-slate-500 text-sm">Quotation for Services</p>
-                        </div>
-                        <div class="text-right text-sm">
-                            <p><strong>日期：</strong> <span id="view-date">2026/05/01</span></p>
-                            <p><strong>編號：</strong> QT-2026-001</p>
-                        </div>
-                    </div>
-
-                    <div class="mb-12 grid grid-cols-2 gap-8">
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-bold mb-1">客戶名稱</p>
-                            <p id="view-client" class="text-lg font-bold">---</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-bold mb-1">專案名稱</p>
-                            <p id="view-proj" class="text-lg font-bold">---</p>
-                        </div>
-                    </div>
-
-                    <div class="mb-12">
-                        <p class="text-xs text-slate-400 uppercase font-bold mb-2">工作範圍 (Scope of Work)</p>
-                        <p id="view-desc" class="text-sm text-slate-700 whitespace-pre-wrap">請輸入專案描述...</p>
-                    </div>
-
-                    <table class="w-full mb-12">
-                        <thead>
-                            <tr class="border-b-2 border-black text-left text-sm">
-                                <th class="py-2">項目描述</th>
-                                <th class="py-2 text-center">數量</th>
-                                <th class="py-2 text-right">單價</th>
-                                <th class="py-2 text-right">小計</th>
-                            </tr>
-                        </thead>
-                        <tbody id="view-items">
-                            <!-- Rows injected here -->
-                        </tbody>
-                        <tfoot>
-                            <tr class="border-t-2 border-black">
-                                <td colspan="3" class="py-4 text-right font-bold text-lg">總投資金額 (Total)</td>
-                                <td id="view-total" class="py-4 text-right font-bold text-xl">NT$ 0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    <div class="mt-20 p-4 border border-slate-200 rounded-lg text-xs text-slate-500">
-                        <p class="font-bold mb-2">條款與備註：</p>
-                        <p>1. 本報價有效期為 14 天。</p>
-                        <p>2. 付款方式：50% 訂金，50% 驗收後支付。</p>
-                        <p>3. 實際交付內容以最終簽署之合約為準。</p>
+                    <div class="preview-line"><span>Website Design</span> <b>$800</b></div>
+                    <div class="preview-line"><span>SEO Setup</span> <b>$200</b></div>
+                    <div class="preview-line border-t border-white/10 pt-2 mt-2 font-bold">
+                        <span>Timeline</span> <b>7 days</b>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Section 2: Input -->
+        <section class="max-w-2xl mx-auto space-y-6">
+            <div class="text-left space-y-2">
+                <h3 class="text-2xl font-bold tracking-tight">Describe your project</h3>
+                <p class="text-slate-400 text-sm">Paste the client's request or a brief project scope.</p>
+            </div>
+            <div class="glass-panel p-2">
+                <textarea 
+                    id="main-input" 
+                    class="input-field w-full h-48 resize-none" 
+                    placeholder="Example: Client needs a 5-page business website with SEO and contact form"
+                ></textarea>
+                <div class="p-3 flex justify-end">
+                    <button 
+                        onclick="generateQuote()" 
+                        class="btn-primary px-8 py-4 text-lg whitespace-nowrap"
+                    >
+                        Generate My Quote →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Output -->
+        <section id="output-section" class="hidden-section pt-20 space-y-8">
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-white/10 gap-8 mx-auto max-w-2xl">
+                <button onclick="switchTab('quote')" id="tab-quote" class="tab-btn active">Quote</button>
+                <button onclick="switchTab('insights')" id="tab-insights" class="tab-btn">Insights</button>
+                <button onclick="switchTab('options')" id="tab-options" class="tab-btn">Options</button>
+            </div>
+
+            <div class="max-w-2xl mx-auto">
+                <!-- Tab 1: Quote -->
+                <div id="content-quote" class="tab-content active space-y-4">
+                    <div class="glass-panel p-6 space-y-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold">Detailed Quote</h3>
+                            <span id="total-display" class="text-2xl font-bold text-cyan-400 mono">$0</span>
+                        </div>
+                        <div id="quote-items" class="space-y-3">
+                            <!-- Dynamic items injected here -->
+                        </div>
+                        <button onclick="addItem()" class="w-full py-3 border border-dashed border-white/20 rounded-xl text-sm text-slate-400 hover:text-white hover:border-white/40 transition-all">
+                            + Add Custom Line Item
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Insights -->
+                <div id="content-insights" class="tab-content space-y-4">
+                    <div class="glass-panel p-6 space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold">Market Intelligence</h3>
+                            <span id="market-badge" class="badge-market badge-reasonable">Reasonable</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                                <p class="text-xs text-slate-400 mb-1">Suggested Range</p>
+                                <p id="price-range" class="text-lg font-bold mono">$0 - $0</p>
+                            </div>
+                            <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                                <p class="text-xs text-slate-400 mb-1">Estimated Workload</p>
+                                <p id="workload-est" class="text-lg font-bold mono">---</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20">
+                            <p class="text-sm font-semibold text-cyan-400 mb-2">Why this price?</p>
+                            <p id="insight-explanation" class="text-sm text-slate-300 leading-relaxed">
+                                Describe your project to see the detailed pricing logic.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Options -->
+                <div id="content-options" class="tab-content space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Basic -->
+                        <div class="glass-panel p-6 flex flex-col text-center space-y-4 border-white/10">
+                            <h4 class="font-bold text-slate-400">Basic</h4>
+                            <p id="tier-basic-price" class="text-3xl font-bold mono">$0</p>
+                            <ul class="text-xs text-slate-500 space-y-2 text-left list-disc pl-4">
+                                <li>Core functionality</li>
+                                <li>Standard delivery</li>
+                            </ul>
+                        </div>
+                        <!-- Standard -->
+                        <div class="glass-panel p-6 flex flex-col text-center space-y-4 border-cyan-500/50 ring-1 ring-cyan-500/50 relative">
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Recommended</div>
+                            <h4 class="font-bold text-cyan-400">Standard</h4>
+                            <p id="tier-standard-price" class="text-3xl font-bold mono">$0</p>
+                            <ul class="text-xs text-slate-500 space-y-2 text-left list-disc pl-4">
+                                <li>Full feature set</li>
+                                <li>Priority support</li>
+                                <li>SEO Optimization</li>
+                            </ul>
+                        </div>
+                        <!-- Premium -->
+                        <div class="glass-panel p-6 flex flex-col text-center space-y-4 border-white/10">
+                            <h4 class="font-bold text-slate-400">Premium</h4>
+                            <p id="tier-premium-price" class="text-3xl font-bold mono">$0</p>
+                            <ul class="text-xs text-slate-500 space-y-2 text-left list-disc pl-4">
+                                <li>White-glove service</li>
+                                <li>Advanced customizations</li>
+                                <li>Maintenance (3 mo)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Actions -->
+            <div class="max-w-2xl mx-auto flex flex-wrap justify-center gap-4 pt-8">
+                <button onclick="copyQuote()" class="btn-secondary px-6 py-3 text-sm font-bold flex items-center gap-2">
+                    <span>Copy Quote</span>
+                </button>
+                <button onclick="exportPDF()" class="btn-secondary px-6 py-3 text-sm font-bold flex items-center gap-2">
+                    <span>Export PDF</span>
+                </button>
+                <button onclick="saveLocal()" class="btn-secondary px-6 py-3 text-sm font-bold flex items-center gap-2">
+                    <span>Save Locally</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Section 4: Monetization Hook (Footer) -->
+        <section class="mt-32 p-8 rounded-3xl bg-gradient-to-b from-cyan-500/10 to-transparent border border-cyan-500/20 text-center space-y-4">
+            <h3 class="text-2xl font-bold">Unlock Pro Features</h3>
+            <p class="text-slate-400 max-w-md mx-auto">
+                Save multiple quotes, export PDF with your own branding, and customize pricing templates.
+            </p>
+            <div class="inline-block p-1 rounded-full bg-white/5 border border-white/10">
+                <button class="px-6 py-2 rounded-full bg-white text-black font-bold hover:bg-cyan-400 transition-colors">
+                    Upgrade to Pro — NT$150/month
+                </button>
+            </div>
+        </section>
+
     </main>
 
     <script>
-        let items = [
-            { desc: '系統架構設計', qty: 1, price: 15000 },
-            { desc: '自動化工作流開發', qty: 3, price: 10000 },
-            { desc: '前端管理介面實作', qty: 1, price: 10000 }
-        ];
+        // Decision Engine: The "Brain" of ProQuote
+        const DecisionEngine = {
+            knowledgeBase: {
+                'website': { name: 'Website Design', min: 800, max: 2500, unit: 'Project', desc: 'Professional responsive web design and layout.' },
+                'seo': { name: 'SEO Optimization', min: 300, max: 1200, unit: 'Setup', desc: 'On-page SEO, keyword research and indexing.' },
+                'logo': { name: 'Brand Identity & Logo', min: 400, max: 1500, unit: 'Package', desc: 'Vector logo design and brand style guide.' },
+                'app': { name: 'Mobile App Development', min: 3000, max: 15000, unit: 'MVP', desc: 'Core feature development for iOS/Android.' },
+                'copy': { name: 'Professional Copywriting', min: 200, max: 800, unit: 'Page', desc: 'High-conversion sales copy and content.' },
+                'consult': { name: 'Strategic Consulting', min: 150, max: 500, unit: 'Hour', desc: 'Expert guidance and project roadmap.' }
+            },
 
-        function renderItemsList() {
-            const list = document.getElementById('items-list');
-            list.innerHTML = '';
-            items.forEach((item, index) => {
-                list.innerHTML += `
-                    <div class="flex gap-2 items-end bg-white/5 p-3 rounded-xl border border-white/10">
-                        <div class="flex-1 space-y-1">
-                            <label class="text-[10px] text-slate-500 uppercase mono">Item Description</label>
-                            <input type="text" value="${item.desc}" oninput="updateItem(${index}, 'desc', this.value)" class="input-field w-full text-sm">
-                        </div>
-                        <div class="w-16 space-y-1">
-                            <label class="text-[10px] text-slate-500 uppercase mono">Qty</label>
-                            <input type="number" value="${item.qty}" oninput="updateItem(${index}, 'qty', this.value)" class="input-field w-full text-sm text-center">
-                        </div>
-                        <div class="w-24 space-y-1">
-                            <label class="text-[10px] text-slate-500 uppercase mono">Price</label>
-                            <input type="number" value="${item.price}" oninput="updateItem(${index}, 'price', this.value)" class="input-field w-full text-sm text-right">
-                        </div>
-                        <button onclick="removeItem(${index})" class="p-2 text-slate-500 hover:text-red-400 transition-colors">✕</button>
-                    </div>
-                `;
-            });
-            updatePreview();
+            analyzeInput(text) {
+                const lines = text.split('\\n').filter(l => l.trim());
+                const matchedItems = [];
+                let totalSuggestedMin = 0;
+                let totalSuggestedMax = 0;
+                const processedKeys = new Set();
+
+                // 1. Structured Parsing (The "Smart Framework" mode)
+                lines.forEach(line => {
+                    const structMatch = line.match(/^(.+?)(?::|-)\\s*(.+)$/);
+                    if (structMatch) {
+                        const name = structMatch[1].trim();
+                        const desc = structMatch[2].trim();
+                        let price = 0;
+
+                        const priceMatch = desc.match(/\\$(\\d+[\\d,]*)/);
+                        if (priceMatch) {
+                            price = parseInt(priceMatch[1].replace(/,/g, ''));
+                        } else {
+                            const kbKey = Object.keys(this.knowledgeBase).find(k => name.toLowerCase().includes(k));
+                            if (kbKey) {
+                                const data = this.knowledgeBase[kbKey];
+                                price = Math.floor((data.min + data.max) / 2);
+                            } else {
+                                price = 500;
+                            }
+                        }
+                        matchedItems.push({ name, price, desc, unit: 'Project' });
+                        processedKeys.add(name.toLowerCase());
+                    }
+                });
+
+                // 2. Keyword Matching (Fallback for non-structured text)
+                const inputLower = text.toLowerCase();
+                for (const [key, data] of Object.entries(this.knowledgeBase)) {
+                    if (inputLower.includes(key) && !Array.from(processedKeys).some(pk => pk.includes(key))) {
+                        matchedItems.push({
+                            name: data.name,
+                            price: Math.floor((data.min + data.max) / 2),
+                            unit: data.unit,
+                            desc: data.desc
+                        });
+                    }
+                }
+
+                // 3. Final Fallback
+                if (matchedItems.length === 0) {
+                    matchedItems.push({ name: 'General Project Consultation', price: 500, unit: 'Project', desc: 'Initial scope definition and planning.' });
+                }
+
+                // Calculate total range based on items
+                matchedItems.forEach(item => {
+                    const kbKey = Object.keys(this.knowledgeBase).find(k => item.name.toLowerCase().includes(k));
+                    if (kbKey) {
+                        totalSuggestedMin += this.knowledgeBase[kbKey].min;
+                        totalSuggestedMax += this.knowledgeBase[kbKey].max;
+                    } else {
+                        totalSuggestedMin += 400;
+                        totalSuggestedMax += 1000;
+                    }
+                });
+
+                return { matchedItems, totalSuggestedMin, totalSuggestedMax };
+            },
+
+            calculateMarketStatus(total, min, max) {
+                if (total < min) return { label: 'Below Market', class: 'badge-below', explanation: 'Your pricing is significantly lower than the industry average. You might be leaving money on the table.' };
+                if (total > max) return { label: 'Premium', class: 'badge-premium', explanation: 'You are positioning yourself as a high-end expert. Ensure your portfolio justifies this premium.' };
+                return { label: 'Reasonable', class: 'badge-reasonable', explanation: 'Your price is aligned with current market standards for this scope of work.' };
+            }
+        };
+
+        let currentQuote = {
+            items: [],
+            total: 0,
+            range: { min: 0, max: 0 }
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('content-' + tabId).classList.add('active');
         }
 
-        function updateItem(index, field, value) {
-            if (field === 'qty' || field === 'price') {
-                items[index][field] = parseFloat(value) || 0;
-            } else {
-                items[index][field] = value;
+        function updateUI() {
+            const itemsContainer = document.getElementById('quote-items');
+            itemsContainer.innerHTML = '';
+            
+            let total = 0;
+            currentQuote.items.forEach((item, index) => {
+                total += item.price;
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl group hover:border-cyan-500/50 transition-all';
+                div.innerHTML = `
+                    <div class="flex-1 mr-4">
+                        <input type="text" value="${item.name}" onchange="updateItem(${index}, 'name', this.value)" 
+                               class="bg-transparent border-none outline-none text-white font-medium w-full focus:text-cyan-400">
+                        <p class="text-xs text-slate-500">${item.desc || 'Custom service item'}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center bg-black/40 px-3 py-1 rounded-lg border border-white/10">
+                            <span class="text-slate-500 mr-2 text-xs">$</span>
+                            <input type="number" value="${item.price}" onchange="updateItem(${index}, 'price', this.value)" 
+                                   class="bg-transparent border-none outline-none text-white font-bold w-20 text-right mono focus:text-cyan-400">
+                        </div>
+                        <button onclick="removeItem(${index})" class="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-red-400 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                `;
+                itemsContainer.appendChild(div);
+            });
+
+            currentQuote.total = total;
+            document.getElementById('total-display').innerText = `$${total.toLocaleString()}`;
+
+            // Update Insights
+            const market = DecisionEngine.calculateMarketStatus(total, currentQuote.range.min, currentQuote.range.max);
+            const badge = document.getElementById('market-badge');
+            badge.innerText = market.label;
+            badge.className = `badge-market ${market.class}`;
+            document.getElementById('price-range').innerText = `$${currentQuote.range.min.toLocaleString()} - $${currentQuote.range.max.toLocaleString()}`;
+            document.getElementById('insight-explanation').innerText = market.explanation;
+            document.getElementById('workload-est').innerText = `${Math.ceil(total / 100)} - ${Math.ceil(total / 50)} Days`;
+
+            // Update Options (Tiers)
+            document.getElementById('tier-basic-price').innerText = `$${Math.floor(total * 0.8).toLocaleString()}`;
+            document.getElementById('tier-standard-price').innerText = `$${total.toLocaleString()}`;
+            document.getElementById('tier-premium-price').innerText = `$${Math.floor(total * 1.4).toLocaleString()}`;
+        }
+
+        function generateQuote() {
+            const input = document.getElementById('main-input').value;
+            if (!input.trim()) {
+                alert('Please describe your project first!');
+                return;
             }
-            updatePreview();
+            
+            const analysis = DecisionEngine.analyzeInput(input);
+            currentQuote.items = analysis.matchedItems;
+            currentQuote.range = { min: analysis.totalSuggestedMin, max: analysis.totalSuggestedMax };
+            
+            const outputSection = document.getElementById('output-section');
+            outputSection.classList.remove('hidden-section');
+            outputSection.scrollIntoView({ behavior: 'smooth' });
+            
+            updateUI();
         }
 
         function addItem() {
-            items.push({ desc: '新項目', qty: 1, price: 0 });
-            renderItemsList();
+            currentQuote.items.push({ name: 'New Item', price: 0, desc: 'Enter description here...', unit: 'Unit' });
+            updateUI();
+        }
+
+        function updateItem(index, field, value) {
+            if (field === 'price') value = parseInt(value) || 0;
+            currentQuote.items[index][field] = value;
+            updateUI();
         }
 
         function removeItem(index) {
-            items.splice(index, 1);
-            renderItemsList();
+            currentQuote.items.splice(index, 1);
+            updateUI();
         }
 
-        function updatePreview() {
-            document.getElementById('view-client').innerText = document.getElementById('client-name').value || '---';
-            document.getElementById('view-proj').innerText = document.getElementById('proj-name').value || '---';
-            document.getElementById('view-desc').innerText = document.getElementById('proj-desc').value || '請輸入專案描述...';
+        function copyQuote() {
+            const text = currentQuote.items.map(i => `${i.name}: $${i.price}`).join('\\n') + `\\nTotal: $${currentQuote.total}`;
+            navigator.clipboard.writeText(text);
+            alert('Quote copied to clipboard!');
+        }
 
-            const viewItems = document.getElementById('view-items');
-            viewItems.innerHTML = '';
-            let total = 0;
-
-            items.forEach(item => {
-                const subtotal = item.qty * item.price;
-                total += subtotal;
-                viewItems.innerHTML += `
-                    <tr class="border-b border-slate-100 text-sm">
-                        <td class="py-3">${item.desc}</td>
-                        <td class="py-3 text-center">${item.qty}</td>
-                        <td class="py-3 text-right">NT$ ${item.price.toLocaleString()}</td>
-                        <td class="py-3 text-right font-semibold">NT$ ${subtotal.toLocaleString()}</td>
-                    </tr>
-                `;
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(34, 211, 238); // Cyan accent
+            doc.text("PROQUOTE", 14, 22);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 30);
+            doc.text(`Quote ID: PQ-${Math.floor(100000 + Math.random() * 900000)}`, 14, 35);
+            
+            // Table Data
+            const tableRows = currentQuote.items.map(item => [
+                item.name, 
+                item.desc || 'Standard Service', 
+                `$${item.price.toLocaleString()}`
+            ]);
+            
+            doc.autoTable({
+                startY: 45,
+                head: [['Item', 'Description', 'Price']],
+                body: tableRows,
+                headStyles: { fillColor: [34, 211, 238], textColor: [0, 0, 0], fontStyle: 'bold' },
+                theme: 'striped',
+                styles: { font: 'helvetica', fontSize: 10 },
+                columnStyles: {
+                    2: { halign: 'right' }
+                }
             });
-
-            document.getElementById('view-total').innerText = 'NT$ ' + total.toLocaleString();
+            
+            const finalY = doc.lastAutoTable.finalY;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text(`Total Amount: $${currentQuote.total.toLocaleString()}`, 14, finalY + 15);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text("Generated by ProQuote SaaS - The Art of Quotation", 14, 285);
+            
+            doc.save(`ProQuote_${Date.now()}.pdf`);
         }
 
-        // Init
-        document.getElementById('view-date').innerText = new Date().toLocaleDateString('zh-TW');
-        renderItemsList();
+        function saveLocal() {
+            alert('Saved to local browser storage!');
+        }
     </script>
 </body>
 </html>
